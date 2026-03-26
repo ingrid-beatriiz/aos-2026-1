@@ -1,27 +1,47 @@
 import { Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
 router.get("/", async (req, res) => {
-  const messages = await req.context.models.Message.findAll();
-  return res.send(messages);
+  try {
+    const messages = await req.context.models.Message.findAll();
+    return res.status(200).send(messages);
+  } catch (error) {
+    return res.status(500).send({ error: "Erro interno do servidor." });
+  }
 });
 
 router.get("/:messageId", async (req, res) => {
-  const message = await req.context.models.Message.findByPk(
-    req.params.messageId,
-  );
-  return res.send(message);
+  try {
+    const message = await req.context.models.Message.findByPk(
+      req.params.messageId,
+    );
+    
+    if (!message) {
+      return res.status(404).send({ error: "Mensagem não encontrada." });
+    }
+    
+    return res.status(200).send(message);
+  } catch (error) {
+    return res.status(500).send({ error: "Erro interno do servidor." });
+  }
 });
 
 router.post("/", async (req, res) => {
-  const message = await req.context.models.Message.create({
-    text: req.body.text,
-    userId: req.context.me.id,
-  });
-
-  return res.send(message);
+  try {
+    const message = await req.context.models.Message.create({
+      text: req.body.text,
+      userId: req.context.me.id,
+    });
+    return res.status(201).send(message);
+  } catch (error) {
+   
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).send({ error: "Dados inválidos." });
+    }
+    
+    return res.status(500).send({ error: "Erro interno do servidor." });
+  }
 });
 
 router.put("/:messageId", async (req, res) => {
@@ -34,18 +54,34 @@ router.put("/:messageId", async (req, res) => {
         where: { id: req.params.messageId },
       }
     );
-    return res.send(updatedRows > 0);
+    
+    if (updatedRows === 0) {
+      return res.status(404).send({ error: "Mensagem não encontrada para atualização." });
+    }
+    
+    return res.status(200).send({ success: "Mensagem atualizada com sucesso." });
   } catch (error) {
-    return res.status(400).send({ error: error.message });
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).send({ error: "Dados inválidos para atualização." });
+    }
+    return res.status(500).send({ error: "Erro interno do servidor." });
   }
 });
 
 router.delete("/:messageId", async (req, res) => {
-  const result = await req.context.models.Message.destroy({
-    where: { id: req.params.messageId },
-  });
-
-  return res.send(true);
+  try {
+    const result = await req.context.models.Message.destroy({
+      where: { id: req.params.messageId },
+    });
+    
+    if (result === 0) {
+      return res.status(404).send({ error: "Mensagem não encontrada para exclusão." });
+    }
+    
+    return res.status(200).send({ success: "Mensagem eliminada com sucesso." });
+  } catch (error) {
+    return res.status(500).send({ error: "Erro interno do servidor." });
+  }
 });
 
 export default router;
