@@ -27,9 +27,24 @@ app.use("/users", routes.user);
 app.use("/messages", routes.message);
 
 app.get("/", (req, res) => {
+  
   res.send(
     "Received a GET HTTP method\nServidor rodando!\n" + process.env.MESSAGE,
   );
+});
+
+app.use((err, req, res, next) => {
+  console.error("Erro capturado pelo Middleware:", err.name);
+
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    return res.status(409).send({ error: "Este registro já existe (conflito de dados)." });
+  }
+
+  if (err.name === 'SequelizeValidationError') {
+    return res.status(400).send({ error: "Dados inválidos ou incompletos." });
+  }
+
+  return res.status(500).send({ error: "Erro interno do servidor." });
 });
 
 const port = process.env.PORT ?? 3000;
