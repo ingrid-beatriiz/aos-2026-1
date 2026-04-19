@@ -28,7 +28,7 @@ app.use("/messages", routes.messageRoute);
 app.use("/tarefas", routes.tarefaRoute);
 
 app.get("/", (req, res) => {
-  res.status(200).send(
+  res.send(
     "Received a GET HTTP method\nServidor rodando!\n" + process.env.MESSAGE,
   );
 });
