@@ -25,6 +25,7 @@ app.use((req, res, next) => {
 app.use("/session", routes.sessionRoute);
 app.use("/users", routes.userRoute);
 app.use("/messages", routes.messageRoute);
+app.use("/tarefas", routes.tarefaRoute);
 
 app.get("/", (req, res) => {
   res.send(
