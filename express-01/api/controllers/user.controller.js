@@ -15,6 +15,7 @@ const create = async (req, res) => {
   const user = await UserService.create(req.context.models, {
     username: req.body.username,
     email: req.body.email,
+    password: req.body.password, 
   });
   return res.status(201).send(user);
 };
@@ -23,6 +24,7 @@ const update = async (req, res) => {
   const [updatedRows] = await UserService.update(req.context.models, req.params.userId, {
     username: req.body.username,
     email: req.body.email,
+    password: req.body.password,
   });
   if (updatedRows === 0) return res.status(404).send({ error: "Utilizador não encontrado para atualização." });
   return res.status(200).send({ success: "Utilizador atualizado com sucesso." });
