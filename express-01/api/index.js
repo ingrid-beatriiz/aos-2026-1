@@ -4,6 +4,7 @@ import express from "express";
 
 import models, { sequelize } from "./models/index.js";
 import * as routes from "./routes/index.js";
+import authMiddleware from "./middlewares/auth.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -13,10 +14,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(async (req, res, next) => {
   req.context = {
     models,
-    me: await models.User.findByLogin("rwieruch"),
   };
   next();
 });
+
+app.use(authMiddleware);
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${req.ip}`);
+  next();
+});
+
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${req.ip}`);
   next();
