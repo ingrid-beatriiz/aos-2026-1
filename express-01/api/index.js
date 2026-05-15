@@ -4,7 +4,7 @@ import express from "express";
 
 import models, { sequelize } from "./models/index.js";
 import * as routes from "./routes/index.js";
-import authMiddleware from "./middlewares/auth.js";
+import { authMiddleware, protectRoutes } from "./middlewares/auth.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -19,6 +19,8 @@ app.use(async (req, res, next) => {
 });
 
 app.use(authMiddleware);
+
+app.use(protectRoutes);
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${req.ip}`);
@@ -42,7 +44,7 @@ app.get("/", (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error("Erro capturado pelo Middleware:", err.name);
+  console.error("Erro captured pelo Middleware:", err.name);
 
   if (err.name === 'SequelizeUniqueConstraintError') {
     return res.status(409).send({ error: "Este registro já existe (conflito de dados)." });

@@ -1,42 +1,53 @@
 import jwt from 'jsonwebtoken';
 
 const authMiddleware = async (req, res, next) => {
-  const publicRoutes = [
-    { path: '/session', method: 'POST' },         // Login
-    { path: '/users', method: 'POST' },           // Cadastro
-    { path: '/session/refresh', method: 'POST' }, // Renovação
-    { path: '/session/logout', method: 'POST' }   // Logout
-  ];
-  const isPublicRoute = publicRoutes.some(
-    route => req.path === route.path && req.method === route.method
-  );
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (isPublicRoute) {
+  if (!token) {
+    req.context.me = null;
     return next();
   }
-
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).send({ error: 'Acesso não autorizado. Token ausente ou formato inválido.' });
-  }
-
-  const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'chave-secreta-padrao';
+    const decoded = jwt.verify(token, secret);
 
     const user = await req.context.models.User.findByPk(decoded.id);
-
-    if (!user) {
-      return res.status(401).send({ error: 'Acesso não autorizado. Utilizador não encontrado.' });
-    }
-
     req.context.me = user;
-    return next();
   } catch (error) {
-    return res.status(401).send({ error: 'Acesso não autorizado. Token inválido ou expirado.' });
+    req.context.me = null;
   }
+
+  return next();
 };
 
-export default authMiddleware;
+const protectRoutes = (req, res, next) => {
+  const { method, path } = req;
+
+  const isWhitelist = 
+    (method === 'POST' && path === '/session') ||
+    (method === 'POST' && path === '/session/refresh') ||
+    (method === 'POST' && path === '/users');
+
+  if (isWhitelist) {
+    return next();
+  }
+
+  if (method === 'GET' && path === '/session') {
+    if (!req.context.me) {
+      return res.status(401).send({ error: 'Acesso negado. Utilizador não autenticado.' });
+    }
+    return next();
+  }
+
+  if (['POST', 'PUT', 'DELETE'].includes(method)) {
+    if (!req.context.me) {
+      return res.status(401).send({ error: 'Acesso negado. Esta operação exige autenticação.' });
+    }
+  }
+
+  return next();
+};
+
+export { authMiddleware, protectRoutes };
